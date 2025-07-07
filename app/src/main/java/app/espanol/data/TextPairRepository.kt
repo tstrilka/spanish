@@ -1,5 +1,6 @@
 package app.espanol.data
 
+import app.espanol.util.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import javax.inject.Inject
@@ -23,13 +24,52 @@ class TextPairRepository @Inject constructor(
             if (pair.original.isBlank() || pair.translated.isBlank()) {
                 Result.failure(IllegalArgumentException("Text pairs cannot be empty"))
             } else {
-                val id = dao.insert(pair)
-                app.espanol.util.Logger.i("Saved text pair with ID: $id")
-                Result.success(id)
+                val existing = dao.findByOriginalAndTranslated(
+                    pair.original.trim(),
+                    pair.translated.trim()
+                )
+                if (existing != null) {
+                    Result.failure(IllegalArgumentException("This translation already exists"))
+                } else {
+                    Result.success(dao.insert(pair))
+                }
             }
         } catch (e: Exception) {
-            app.espanol.util.Logger.e("Failed to save text pair", e)
+            Logger.e("Failed to insert text pair", e)
             Result.failure(e)
+        }
+    }
+
+    suspend fun updateTextPair(pair: TextPair): Result<Unit> {
+        return try {
+            if (pair.original.isBlank() || pair.translated.isBlank()) {
+                Result.failure(IllegalArgumentException("Text pairs cannot be empty"))
+            } else {
+                // Check for duplicate with other pairs (excluding this one)
+                val existingPair = dao.findDuplicateForUpdate(
+                    pair.original.trim(),
+                    pair.translated.trim(),
+                    pair.id
+                )
+                if (existingPair != null) {
+                    Result.failure(IllegalArgumentException("This translation already exists"))
+                } else {
+                    dao.update(pair)
+                    Result.success(Unit)
+                }
+            }
+        } catch (e: Exception) {
+            Logger.e("Failed to update text pair", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCount(): Int {
+        return try {
+            dao.getCount()
+        } catch (e: Exception) {
+            Logger.e("Failed to get count", e)
+            0
         }
     }
 
@@ -38,13 +78,8 @@ class TextPairRepository @Inject constructor(
             dao.deleteById(id)
             Result.success(Unit)
         } catch (e: Exception) {
+            Logger.e("Failed to delete text pair", e)
             Result.failure(e)
         }
-    }
-
-    suspend fun getCount(): Int = try {
-        dao.getCount()
-    } catch (e: Exception) {
-        0
     }
 }

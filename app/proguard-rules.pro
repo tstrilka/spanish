@@ -15,6 +15,11 @@
 # TTS
 -keep class android.speech.tts.** { *; }
 -dontwarn android.speech.tts.**
+-keep class javax.inject.** { *; }
+-keepclassmembers class * {
+    @javax.inject.* <fields>;
+    @javax.inject.* <methods>;
+}
 
 # Compose
 -keep class androidx.compose.** { *; }

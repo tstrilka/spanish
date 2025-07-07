@@ -78,6 +78,9 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.mlkit.translate)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

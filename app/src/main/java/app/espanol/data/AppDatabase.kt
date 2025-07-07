@@ -4,36 +4,32 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import app.espanol.BuildConfig
 
 @Database(
-    entities = [TextPair::class], version = 1, exportSchema = true // Enable for production
+    entities = [TextPair::class, LearningProgress::class],
+    version = 1,
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun textPairDao(): TextPairDao
+    abstract fun learningProgressDao(): LearningProgressDao
 
     companion object {
-        val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Example: Add favorite column with proper default
-                database.execSQL("ALTER TABLE text_pairs ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
-            }
-        }
-
         fun getDatabase(context: Context): AppDatabase {
             return Room.databaseBuilder(
                 context.applicationContext, AppDatabase::class.java, "espanol-db"
-            ).addCallback(object : RoomDatabase.Callback() {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        super.onCreate(db)
-                        app.espanol.util.Logger.i("Database created")
-                    }
-                }).apply {
-                    if (app.espanol.BuildConfig.DEBUG) {
-                        fallbackToDestructiveMigration()
-                    }
-                }.build()
+            ).apply {
+                if (BuildConfig.DEBUG) {
+                    fallbackToDestructiveMigration()
+                }
+            }.addCallback(object : RoomDatabase.Callback() {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    super.onCreate(db)
+                    app.espanol.util.Logger.i("Database created")
+                }
+            }).build()
         }
     }
 }

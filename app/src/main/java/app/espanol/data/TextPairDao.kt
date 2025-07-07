@@ -3,6 +3,7 @@ package app.espanol.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -24,4 +25,13 @@ interface TextPairDao {
 
     @Query("SELECT * FROM text_pairs ORDER BY createdAt DESC LIMIT :limit")
     fun getRecentPairs(limit: Int): Flow<List<TextPair>>
+
+    @Query("SELECT * FROM text_pairs WHERE LOWER(TRIM(original)) = LOWER(TRIM(:original)) AND LOWER(TRIM(translated)) = LOWER(TRIM(:translated)) LIMIT 1")
+    suspend fun findByOriginalAndTranslated(original: String, translated: String): TextPair?
+
+    @Update
+    suspend fun update(pair: TextPair)
+
+    @Query("SELECT * FROM text_pairs WHERE LOWER(TRIM(original)) = LOWER(TRIM(:original)) AND LOWER(TRIM(translated)) = LOWER(TRIM(:translated)) AND id != :excludeId LIMIT 1")
+    suspend fun findDuplicateForUpdate(original: String, translated: String, excludeId: Int): TextPair?
 }

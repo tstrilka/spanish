@@ -32,13 +32,30 @@ class TextPairRepositoryTest {
 
     @Test
     fun `insertTextPair success`() = runTest {
-        val pair = TextPair(original = "hello", translated = "hola")
+        // Use Czech word that should pass validation
+        val pair = TextPair(original = "ahoj", translated = "hola")
+
+        // Mock the duplicate check first
+        coEvery { dao.findByOriginalAndTranslated("ahoj", "hola") } returns null
         coEvery { dao.insert(pair) } returns 1L
 
         val result = repository.insertTextPair(pair)
 
-        assertTrue(result.isSuccess)
+        assertTrue("Expected success but got failure: ${result.exceptionOrNull()}", result.isSuccess)
         assertEquals(1L, result.getOrNull())
+    }
+
+    @Test
+    fun `insertTextPair fails with duplicate pair`() = runTest {
+        val pair = TextPair(original = "ahoj", translated = "hola")
+        val existingPair = TextPair(id = 1, original = "ahoj", translated = "hola")
+
+        // Mock finding existing pair
+        coEvery { dao.findByOriginalAndTranslated("ahoj", "hola") } returns existingPair
+
+        val result = repository.insertTextPair(pair)
+
+        assertTrue("Expected failure for duplicate pair", result.isFailure)
     }
 
     @Test
@@ -53,11 +70,21 @@ class TextPairRepositoryTest {
 
     @Test
     fun `getAllTextPairs returns flow`() = runTest {
-        val pairs = listOf(TextPair(original = "hello", translated = "hola"))
+        val pairs = listOf(TextPair(original = "ahoj", translated = "hola"))
         every { dao.getAll() } returns flowOf(pairs)
 
         val result = repository.getAllTextPairs().first()
 
         assertEquals(pairs, result)
+    }
+
+    @Test
+    fun `insertTextPair fails with invalid characters`() = runTest {
+        // Test with English word that should fail validation
+        val pair = TextPair(original = "hello", translated = "hola")
+
+        val result = repository.insertTextPair(pair)
+
+        assertTrue("Expected failure for English word", result.isFailure)
     }
 }

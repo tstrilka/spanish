@@ -2,6 +2,7 @@ package app.espanol.di
 
 import android.content.Context
 import app.espanol.data.AppDatabase
+import app.espanol.data.LearningProgressDao
 import app.espanol.data.TextPairDao
 import dagger.Module
 import dagger.Provides
@@ -23,5 +24,10 @@ object DatabaseModule {
     @Provides
     fun provideTextPairDao(database: AppDatabase): TextPairDao {
         return database.textPairDao()
+    }
+
+    @Provides
+    fun provideLearningProgressDao(database: AppDatabase): LearningProgressDao {
+        return database.learningProgressDao()
     }
 }

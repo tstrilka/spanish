@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.espanol.data.TextPair
 import app.espanol.data.TextPairRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,8 +53,11 @@ class TranslateViewModel @Inject constructor(
         _saveState.value = SaveState.Idle
     }
 
+    private var searchJob: Job? = null
+
     fun searchTranslations(query: String) {
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             repository.searchTextPairs(query).collect { results ->
                 _searchResults.value = results
             }
@@ -62,7 +66,7 @@ class TranslateViewModel @Inject constructor(
 
     fun exportTranslations(): String {
         return buildString {
-            appendLine("English,Spanish,Date")
+            appendLine("Czech,Spanish,Date")
             _currentPairs.value.forEach { pair ->
                 val date =
                     java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())

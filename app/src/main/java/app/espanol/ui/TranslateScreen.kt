@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.espanol.data.TextPair
+import app.espanol.speech.SpeechRecognitionManager
 import app.espanol.translation.TranslationService
 import app.espanol.tts.TTSManager
 
@@ -39,7 +40,8 @@ fun TranslateScreen(
     viewModel: TranslateViewModel,
     onSpeak: (String) -> Unit,
     ttsManager: TTSManager,
-    translationService: TranslationService
+    translationService: TranslationService,
+    speechRecognitionManager: SpeechRecognitionManager
 ) {
     val saveState by viewModel.saveState.collectAsStateWithLifecycle()
     val recentPairs by viewModel.recentPairs.collectAsStateWithLifecycle(emptyList())
@@ -70,7 +72,11 @@ fun TranslateScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
             ) {
                 Text(
-                    text = "Save Error: ${currentSaveState.message}",
+                    text = if (currentSaveState.message.contains("already exists")) {
+                        "Duplicate: This translation already exists"
+                    } else {
+                        "Save Error: ${currentSaveState.message}"
+                    },
                     modifier = Modifier.padding(16.dp),
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -107,7 +113,8 @@ fun TranslateScreen(
             },
             isLoading = saveState is SaveState.Loading,
             ttsReady = ttsReady,
-            translationService = translationService
+            translationService = translationService,
+            speechRecognitionManager = speechRecognitionManager
         )
 
         // Add search functionality
@@ -136,7 +143,10 @@ fun TranslateScreen(
                 items(displayPairs) { pair ->
                     TranslationItem(
                         pair = pair,
-                        onSpeak = onSpeak
+                        onSpeak = onSpeak,
+                        onDelete = { deletedPair ->
+                            viewModel.deleteTextPair(deletedPair)
+                        }
                     )
                 }
             }
@@ -158,7 +168,7 @@ fun TranslationItem(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "English: ${pair.original}",
+                text = "Czech: ${pair.original}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
