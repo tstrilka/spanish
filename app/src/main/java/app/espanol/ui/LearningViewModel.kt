@@ -12,6 +12,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class LearningMode {
+    VISUAL,
+    LISTENING
+}
+
 @HiltViewModel
 class LearningViewModel @Inject constructor(
     private val learningProgressDao: LearningProgressDao
@@ -26,10 +31,22 @@ class LearningViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _learningMode = MutableStateFlow(LearningMode.VISUAL)
+    val learningMode: StateFlow<LearningMode> = _learningMode.asStateFlow()
+
+    private val _hasPlayedAudio = MutableStateFlow(false)
+    val hasPlayedAudio: StateFlow<Boolean> = _hasPlayedAudio.asStateFlow()
+
+    fun setLearningMode(mode: LearningMode) {
+        _learningMode.value = mode
+        loadNextPair()
+    }
+
     fun loadNextPair() {
         viewModelScope.launch {
             _isLoading.value = true
             _showTranslation.value = false
+            _hasPlayedAudio.value = false
 
             try {
                 val pair = learningProgressDao.getRandomPairForLearning()
@@ -51,6 +68,10 @@ class LearningViewModel @Inject constructor(
 
     fun showTranslation() {
         _showTranslation.value = true
+    }
+
+    fun markAudioPlayed() {
+        _hasPlayedAudio.value = true
     }
 
     fun markResult(success: Boolean) {
