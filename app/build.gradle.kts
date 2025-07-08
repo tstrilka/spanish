@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.mlkit.translate)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.material.icons.extended)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

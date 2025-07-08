@@ -180,7 +180,7 @@ fun TranslateTextBox(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = error,
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
             }
@@ -235,11 +235,9 @@ fun TranslateTextBox(
 
                 Button(
                     onClick = {
-                        // Always save as Czech -> Spanish
                         val czech = if (isSpanishToCzech) czechText else czechText
                         val spanish = if (isSpanishToCzech) spanishText else spanishText
                         onSave(czech.trim(), spanish.trim())
-                        // Clear after saving
                         czechText = ""
                         spanishText = ""
                         userModifiedTranslation = false

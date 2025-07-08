@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -26,9 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.espanol.data.TextPair
+import androidx.compose.foundation.layout.size
+
 
 @Composable
 fun CatalogItem(
@@ -88,7 +92,19 @@ fun CatalogItem(
                                 translated = editedTranslated.trim()
                             ))
                         },
-                        enabled = editedOriginal.isNotBlank() && editedTranslated.isNotBlank()
+                        enabled = editedOriginal.isNotBlank() && editedTranslated.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer
+                            },
+                            contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            }
+                        )
                     ) {
                         Text("Save")
                     }
@@ -98,11 +114,17 @@ fun CatalogItem(
                             editedOriginal = textPair.original
                             editedTranslated = textPair.translated
                             onCancel()
-                        }
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
                     ) {
                         Text("Cancel")
-                    }
-                }
+                    }                }
             } else {
                 // Display mode
                 Text(
@@ -125,19 +147,33 @@ fun CatalogItem(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onEdit) {
+                    IconButton(
+                        onClick = {
+                            println("Edit button clicked for item ${textPair.id}")
+                            onEdit()
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
-                    IconButton(onClick = onDelete) {
+                    IconButton(
+                        onClick = {
+                            println("Delete button clicked for item ${textPair.id}")
+                            onDelete()
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }

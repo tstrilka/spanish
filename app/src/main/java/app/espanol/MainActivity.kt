@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -30,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import app.espanol.speech.SpeechRecognitionManager
 import app.espanol.translation.TranslationService
 import app.espanol.tts.TTSManager
+import app.espanol.ui.CatalogScreen
 import app.espanol.ui.LearningScreen
 import app.espanol.ui.TranslateScreen
 import app.espanol.ui.theme.EspanolTheme
@@ -70,10 +73,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             EspanolTheme {
-                var isLearningMode by remember { mutableStateOf(false) }
+                var currentMode by remember { mutableStateOf(0) } // 0=translate, 1=learn, 2=catalog
                 val coroutineScope = rememberCoroutineScope()
 
-                // Initialize translation service
                 remember {
                     coroutineScope.launch {
                         translationService.initializeTranslators()
@@ -83,57 +85,105 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .padding(16.dp)
                         ) {
                             Text(
-                                text = if (isLearningMode) "Learning Mode" else "Translation Mode",
-                                style = MaterialTheme.typography.headlineSmall
+                                text = when (currentMode) {
+                                    0 -> "Translation Mode"
+                                    1 -> "Learning Mode"
+                                    2 -> "Catalog Mode"
+                                    else -> "Translation Mode"
+                                },
+                                style = MaterialTheme.typography.headlineSmall,
+                                modifier = Modifier.padding(bottom = 12.dp)
                             )
-                            Button(
-                                onClick = { isLearningMode = !isLearningMode },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.secondary
-                                    },
-                                    contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondary
-                                    }
-                                )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(if (isLearningMode) "Translate" else "Learn")
-                            }                        }
-                    }
-                ) { innerPadding ->
-                    if (isLearningMode) {
-                        LearningScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            viewModel = hiltViewModel(),
-                            onSpeak = { text ->
-                                coroutineScope.launch {
-                                    ttsManager.speak(text)
+                                Button(
+                                    onClick = { currentMode = 0 },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (currentMode == 0) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                        },
+                                        contentColor = if (currentMode == 0) {
+                                            Color.White
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Translate")
+                                }
+
+                                Button(
+                                    onClick = { currentMode = 1 },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (currentMode == 1) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                        },
+                                        contentColor = if (currentMode == 1) {
+                                            Color.White
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Learn")
+                                }
+
+                                Button(
+                                    onClick = { currentMode = 2 },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (currentMode == 2) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                        },
+                                        contentColor = if (currentMode == 2) {
+                                            Color.White
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Catalog")
                                 }
                             }
-                        )
-                    } else {
-                        TranslateScreen(
+                        }
+                    }
+                ) { innerPadding ->
+                    when (currentMode) {
+                        0 -> TranslateScreen(
                             modifier = Modifier.padding(innerPadding),
                             viewModel = hiltViewModel(),
-                            onSpeak = { text ->
-                                coroutineScope.launch {
-                                    ttsManager.speak(text)
-                                }
-                            },
+                            onSpeak = { text -> coroutineScope.launch { ttsManager.speak(text) } },
                             ttsManager = ttsManager,
                             translationService = translationService,
                             speechRecognitionManager = speechRecognitionManager
+                        )
+
+                        1 -> LearningScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            viewModel = hiltViewModel(),
+                            onSpeak = { text -> coroutineScope.launch { ttsManager.speak(text) } }
+                        )
+
+                        2 -> CatalogScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            viewModel = hiltViewModel()
                         )
                     }
                 }
