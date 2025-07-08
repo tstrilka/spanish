@@ -137,7 +137,11 @@ fun CatalogItem(
                 Text(
                     text = "Spanish: ${textPair.translated}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    color = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.secondary
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -157,10 +161,13 @@ fun CatalogItem(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.secondary
+                            },
                             modifier = Modifier.size(24.dp)
-                        )
-                    }
+                        )                    }
 
                     IconButton(
                         onClick = {

@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,10 +17,27 @@ class CatalogViewModel @Inject constructor(
     private val repository: TextPairRepository
 ) : ViewModel() {
 
-    val textPairs = repository.getAllTextPairs()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _editingItemId = MutableStateFlow<Int?>(null)
     val editingItemId: StateFlow<Int?> = _editingItemId.asStateFlow()
+
+    val textPairs = repository.getAllTextPairs()
+        .combine(searchQuery) { pairs, query ->
+            if (query.isBlank()) {
+                pairs
+            } else {
+                pairs.filter { pair ->
+                    pair.original.contains(query, ignoreCase = true) ||
+                            pair.translated.contains(query, ignoreCase = true)
+                }
+            }
+        }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
 
     fun startEditing(id: Int) {
         _editingItemId.value = id
