@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -21,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.espanol.speech.SpeechRecognitionManager
@@ -87,11 +90,32 @@ fun TranslateTextBox(
                 checked = isSpanishToCzech,
                 onCheckedChange = {
                     isSpanishToCzech = it
-                    // Clear fields when switching modes
                     czechText = ""
                     spanishText = ""
                     userModifiedTranslation = false
-                }
+                },
+                colors = androidx.compose.material3.SwitchDefaults.colors(
+                    checkedThumbColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    },
+                    checkedTrackColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    },
+                    uncheckedThumbColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.outline
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    },
+                    uncheckedTrackColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
+                )
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Spanish → Czech")
@@ -129,7 +153,19 @@ fun TranslateTextBox(
                             speechRecognitionManager.startListening()
                         }
                     },
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.tertiaryContainer
+                        },
+                        contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                            MaterialTheme.colorScheme.onTertiary
+                        } else {
+                            MaterialTheme.colorScheme.onTertiaryContainer
+                        }
+                    )
                 ) {
                     if (isListening) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -180,7 +216,19 @@ fun TranslateTextBox(
             ) {
                 Button(
                     onClick = { onSpeak(translatedText) },
-                    enabled = ttsReady && !isLoading
+                    enabled = ttsReady && !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                            MaterialTheme.colorScheme.secondary
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
+                        contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                            MaterialTheme.colorScheme.onSecondary
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        }
+                    )
                 ) {
                     Text("🔊 Speak")
                 }
@@ -196,7 +244,19 @@ fun TranslateTextBox(
                         spanishText = ""
                         userModifiedTranslation = false
                     },
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer
+                        },
+                        contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        }
+                    )
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp))

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,10 +20,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.foundation.layout.width
+import app.espanol.ui.theme.SpanishBrown
+import app.espanol.ui.theme.SpanishGoldDark
 
 @Composable
 fun LearningScreen(
@@ -82,14 +86,22 @@ fun LearningScreen(
                             text = currentPair?.translated ?: "",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                SpanishBrown
+                            } else {
+                                SpanishGoldDark
+                            }
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
                             onClick = {
                                 currentPair?.let { pair -> onSpeak(pair.translated) }
-                            }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            )
                         ) {
                             Text("🔊 Speak")
                         }
@@ -109,7 +121,11 @@ fun LearningScreen(
                                 onClick = {
                                     viewModel.markResult(true)
                                     viewModel.loadNextPair()
-                                }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF4CAF50), // Green
+                                    contentColor = Color.White
+                                )
                             ) {
                                 Text("✓ Correct")
                             }
@@ -117,11 +133,18 @@ fun LearningScreen(
                                 onClick = {
                                     viewModel.markResult(false)
                                     viewModel.loadNextPair()
-                                }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                        Color(0xFFD32F2F) // Light mode - darker red
+                                    } else {
+                                        Color(0xFFEF5350) // Dark mode - lighter red
+                                    },
+                                    contentColor = Color.White
+                                )
                             ) {
                                 Text("✗ Wrong")
-                            }
-                        }
+                            }                        }
                     } else {
                         Text(
                             text = "Think of the Spanish translation, then:",
@@ -130,7 +153,19 @@ fun LearningScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = { viewModel.showTranslation() }
+                            onClick = { viewModel.showTranslation() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.secondary
+                                },
+                                contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSecondary
+                                }
+                            )
                         ) {
                             Text("Show Translation")
                         }
@@ -141,7 +176,19 @@ fun LearningScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { viewModel.loadNextPair() }
+                onClick = { viewModel.loadNextPair() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.outline
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    },
+                    contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
             ) {
                 Text("Skip to Next Word")
             }
