@@ -4,32 +4,63 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import app.espanol.BuildConfig
 
 @Database(
-    entities = [TextPair::class, LearningProgress::class],
-    version = 1,
-    exportSchema = true
+    entities = [TextPair::class, TextPairMetadata::class, LearningProgress::class],
+    version = 2,
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun textPairDao(): TextPairDao
+    abstract fun textPairMetadataDao(): TextPairMetadataDao
     abstract fun learningProgressDao(): LearningProgressDao
 
     companion object {
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
         fun getDatabase(context: Context): AppDatabase {
-            return Room.databaseBuilder(
-                context.applicationContext, AppDatabase::class.java, "espanol-db"
-            ).apply {
-                if (BuildConfig.DEBUG) {
-                    fallbackToDestructiveMigration()
-                }
-            }.addCallback(object : RoomDatabase.Callback() {
-                override fun onCreate(db: SupportSQLiteDatabase) {
-                    super.onCreate(db)
-                    app.espanol.util.Logger.i("Database created")
-                }
-            }).build()
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "espanol-db"
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
+                INSTANCE = instance
+                instance
+            }
+        }
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create the new table
+                database.execSQL(
+                    """
+            CREATE TABLE IF NOT EXISTS `text_pair_metadata` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `textPairId` INTEGER NOT NULL,
+                `category` TEXT NOT NULL,
+                FOREIGN KEY(`textPairId`) REFERENCES `text_pairs`(`id`) ON DELETE CASCADE
+            )
+        """
+                )
+
+                // Create indices
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_text_pair_metadata_textPairId` ON `text_pair_metadata` (`textPairId`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_text_pair_metadata_category` ON `text_pair_metadata` (`category`)")
+
+                // Assign a default category to all existing text pairs
+                database.execSQL(
+                    """
+            INSERT INTO text_pair_metadata (textPairId, category)
+            SELECT id, 'Uncategorized' FROM text_pairs
+        """
+                )
+            }
         }
     }
 }

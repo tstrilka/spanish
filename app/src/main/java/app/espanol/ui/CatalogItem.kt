@@ -2,12 +2,16 @@ package app.espanol.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -18,9 +22,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,8 +37,6 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.espanol.data.TextPair
-import androidx.compose.foundation.layout.size
-
 
 @Composable
 fun CatalogItem(
@@ -42,10 +46,20 @@ fun CatalogItem(
     onSave: (TextPair) -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
+    metadataViewModel: TextPairMetadataViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     var editedOriginal by remember(textPair.original) { mutableStateOf(textPair.original) }
     var editedTranslated by remember(textPair.translated) { mutableStateOf(textPair.translated) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
+
+    var categories by remember { mutableStateOf(emptyList<String>()) }
+
+    LaunchedEffect(textPair.id) {
+        metadataViewModel?.getCategoriesForTextPair(textPair.id)?.collect { newCategories ->
+            categories = newCategories
+        }
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -55,7 +69,7 @@ fun CatalogItem(
             modifier = Modifier.padding(16.dp)
         ) {
             if (isEditing) {
-                // Edit mode
+                // Edit mode remains unchanged
                 Text(
                     text = "Edit Translation",
                     style = MaterialTheme.typography.titleMedium,
@@ -124,7 +138,54 @@ fun CatalogItem(
                         )
                     ) {
                         Text("Cancel")
-                    }                }
+                    }
+                }
+
+                // Add category editing in edit mode as well
+                if (metadataViewModel != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Display current categories
+                    if (categories.isNotEmpty()) {
+                        Text(
+                            text = "Categories:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            categories.forEach { category ->
+                                SuggestionChip(
+                                    onClick = { },
+                                    label = { Text(category) }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { showCategoryDialog = true },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Category,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("Edit Categories")
+                    }
+                }
             } else {
                 // Display mode
                 Text(
@@ -144,20 +205,53 @@ fun CatalogItem(
                     }
                 )
 
+                // Add categories display
+                if (categories.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        categories.forEach { category ->
+                            SuggestionChip(
+                                onClick = { },
+                                label = { Text(category) }
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
 
+// In display mode (when not editing), make the category button more visible
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),  // Add spacing between items
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = {
-                            println("Edit button clicked for item ${textPair.id}")
-                            onEdit()
-                        },
-                        modifier = Modifier.size(48.dp)
-                    ) {
+                    // Make a standalone button for categories that's clearly visible
+                    if (metadataViewModel != null) {
+                        Button(
+                            onClick = { showCategoryDialog = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Category,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text("Categories")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))  // Push the following buttons to the right
+
+                    // Your existing edit/delete buttons
+                    IconButton(onClick = { onEdit() }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
@@ -167,15 +261,10 @@ fun CatalogItem(
                                 MaterialTheme.colorScheme.secondary
                             },
                             modifier = Modifier.size(24.dp)
-                        )                    }
+                        )
+                    }
 
-                    IconButton(
-                        onClick = {
-                            println("Delete button clicked for item ${textPair.id}")
-                            onDelete()
-                        },
-                        modifier = Modifier.size(48.dp)
-                    ) {
+                    IconButton(onClick = { onDelete() }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
@@ -185,6 +274,30 @@ fun CatalogItem(
                     }
                 }
             }
+        }
+    }
+
+    // Show the category dialog as an overlay
+    if (showCategoryDialog && metadataViewModel != null) {
+        // The dialog overlay
+        androidx.compose.material3.Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background.copy(alpha = 0.6f)
+        ) {
+            // Make sure TextPairEditMetadata loads and refreshes the data for this text pair
+            LaunchedEffect(textPair.id) {
+                metadataViewModel.loadCategoriesForTextPair(textPair.id)
+            }
+
+            TextPairEditMetadata(
+                textPairId = textPair.id,
+                viewModel = metadataViewModel,
+                onDismiss = {
+                    showCategoryDialog = false
+                    // Reload categories after editing
+                    metadataViewModel.saveMetadata(textPair.id)
+                }
+            )
         }
     }
 }

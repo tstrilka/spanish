@@ -43,11 +43,12 @@ import kotlinx.coroutines.launch
 @Composable
 fun CatalogScreen(
     modifier: Modifier = Modifier,
-    viewModel: CatalogViewModel
+    catalogViewModel: CatalogViewModel,
+    metadataViewModel: TextPairMetadataViewModel,
 ) {
-    val textPairs: List<TextPair> by viewModel.textPairs.collectAsStateWithLifecycle(emptyList())
-    val editingItemId: Int? by viewModel.editingItemId.collectAsStateWithLifecycle()
-    val searchQuery: String by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val textPairs: List<TextPair> by catalogViewModel.textPairs.collectAsStateWithLifecycle(emptyList())
+    val editingItemId: Int? by catalogViewModel.editingItemId.collectAsStateWithLifecycle()
+    val searchQuery: String by catalogViewModel.searchQuery.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -159,7 +160,7 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
 
         TextField(
             value = searchQuery,
-            onValueChange = { viewModel.updateSearchQuery(it) },
+            onValueChange = { catalogViewModel.updateSearchQuery(it) },
             label = { Text("Search translations...") },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = {
@@ -170,7 +171,7 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
             },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                    IconButton(onClick = { catalogViewModel.updateSearchQuery("") }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Clear search"
@@ -202,16 +203,18 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
                     CatalogItem(
                         textPair = textPair,
                         isEditing = editingItemId == textPair.id,
-                        onEdit = { viewModel.startEditing(textPair.id) },
+                        onEdit = { catalogViewModel.startEditing(textPair.id) },
                         onSave = { updatedPair ->
-                            viewModel.saveTextPair(
+                            catalogViewModel.saveTextPair(
                                 id = updatedPair.id,
                                 original = updatedPair.original,
                                 translated = updatedPair.translated
                             )
                         },
-                        onCancel = { viewModel.cancelEditing() },
-                        onDelete = { viewModel.deleteTextPair(textPair.id) }
+                        onCancel = { catalogViewModel.cancelEditing() },
+                        onDelete = { catalogViewModel.deleteTextPair(textPair.id) },
+                        metadataViewModel = metadataViewModel,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
             }

@@ -4,6 +4,7 @@ import android.content.Context
 import app.espanol.data.AppDatabase
 import app.espanol.data.LearningProgressDao
 import app.espanol.data.TextPairDao
+import app.espanol.data.TextPairMetadataDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,12 +23,20 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideTextPairDao(database: AppDatabase): TextPairDao {
-        return database.textPairDao()
+    @Singleton
+    fun provideTextPairDao(appDatabase: AppDatabase): TextPairDao {
+        return appDatabase.textPairDao()
     }
 
     @Provides
-    fun provideLearningProgressDao(database: AppDatabase): LearningProgressDao {
-        return database.learningProgressDao()
+    @Singleton
+    fun provideLearningProgressDao(appDatabase: AppDatabase): LearningProgressDao {
+        return appDatabase.learningProgressDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTextPairMetadataDao(appDatabase: AppDatabase): TextPairMetadataDao {
+        return appDatabase.textPairMetadataDao()
     }
 }
