@@ -51,9 +51,20 @@ fun CatalogScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    // Move metadataViewModel creation here so it is available for import/export
+    val context = LocalContext.current
+    val metadataViewModel: TextPairMetadataViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return TextPairMetadataViewModel(context.applicationContext as Application) as T
+            }
+        }
+    )
+
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            catalogViewModel.importCatalogFromCsv(uri)
+            catalogViewModel.importCatalogFromCsv(uri, metadataViewModel)
         }
     }
 
@@ -92,7 +103,7 @@ fun CatalogScreen(
                 modifier = Modifier.weight(1f)
             )
             IconButton(
-                onClick = { catalogViewModel.exportCatalogToCsv() },
+                onClick = { catalogViewModel.exportCatalogToCsv(metadataViewModel) },
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -112,12 +123,13 @@ fun CatalogScreen(
         }
         SnackbarHost(hostState = snackbarHostState)
 
-        CatalogScreenContent(viewModel = catalogViewModel)
+        CatalogScreenContent(viewModel = catalogViewModel, metadataViewModel = metadataViewModel)
     }
 }
 
+// Update CatalogScreenContent to accept metadataViewModel as a parameter
 @Composable
-fun CatalogScreenContent(viewModel: CatalogViewModel) {
+fun CatalogScreenContent(viewModel: CatalogViewModel, metadataViewModel: TextPairMetadataViewModel) {
     val textPairs: List<TextPair> by viewModel.textPairs.collectAsStateWithLifecycle(emptyList())
     val editingItemId: Int? by viewModel.editingItemId.collectAsStateWithLifecycle()
     val searchQuery: String by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -127,7 +139,7 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            viewModel.importCatalogFromCsv(uri)
+            viewModel.importCatalogFromCsv(uri, metadataViewModel)
         }
     }
 
@@ -150,16 +162,6 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
         }
     }
 
-    // Use viewModel() with a factory to provide Application context
-    val context = LocalContext.current
-    val metadataViewModel: TextPairMetadataViewModel = viewModel(
-        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return TextPairMetadataViewModel(context.applicationContext as Application) as T
-            }
-        }
-    )
 
     Column(
         modifier = Modifier

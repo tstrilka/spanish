@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -105,16 +106,17 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
-    fun exportCatalogToCsv() {
+    fun exportCatalogToCsv(metadataViewModel: TextPairMetadataViewModel? = null) {
         viewModelScope.launch {
             try {
                 val pairs = textPairs.first()
                 val csvBuilder = StringBuilder()
-                csvBuilder.append("Original,Translated\n")
+                csvBuilder.append("Original,Translated,Categories\n")
                 for (pair in pairs) {
                     val original = pair.original.replace("\"", "\"\"")
                     val translated = pair.translated.replace("\"", "\"\"")
-                    csvBuilder.append("\"$original\",\"$translated\"\n")
+                    val categories = metadataViewModel?.getCategoriesForTextPair(pair.id)?.firstOrNull()?.joinToString(";") ?: ""
+                    csvBuilder.append("\"$original\",\"$translated\",\"$categories\"\n")
                 }
                 // Save to Downloads folder
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
@@ -133,7 +135,7 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
-    fun importCatalogFromCsv(uri: Uri) {
+    fun importCatalogFromCsv(uri: Uri, metadataViewModel: TextPairMetadataViewModel? = null) {
         viewModelScope.launch {
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)
@@ -148,24 +150,40 @@ class CatalogViewModel @Inject constructor(
                     _importResult.emit(ImportResult.Failure)
                     return@launch
                 }
-                val pairsToImport = mutableListOf<TextPair>()
+                val pairsToImport = mutableListOf<Triple<String, String, List<String>>>()
                 for (line in lines.drop(1)) { // skip header
-                    val regex = "^\"(.*)\",\"(.*)\"$".toRegex()
+                    val regex = "^\"(.*)\",\"(.*)\",\"(.*)\"$".toRegex()
                     val match = regex.find(line)
                     if (match != null) {
-                        val (original, translated) = match.destructured
-                        pairsToImport.add(TextPair(original = original, translated = translated))
+                        val (original, translated, categoriesStr) = match.destructured
+                        val categories = categoriesStr.split(";").map { it.trim() }.filter { it.isNotEmpty() }
+                        pairsToImport.add(Triple(original, translated, categories))
+                    } else {
+                        // fallback for old format
+                        val regexOld = "^\"(.*)\",\"(.*)\"$".toRegex()
+                        val matchOld = regexOld.find(line)
+                        if (matchOld != null) {
+                            val (original, translated) = matchOld.destructured
+                            pairsToImport.add(Triple(original, translated, emptyList()))
+                        }
                     }
                 }
                 val existingPairs = textPairs.first()
                 val existingSet = existingPairs.map { it.original to it.translated }.toSet()
                 var imported = 0
                 var skipped = 0
-                for (pair in pairsToImport) {
-                    if ((pair.original to pair.translated) in existingSet) {
+                for ((original, translated, categories) in pairsToImport) {
+                    if ((original to translated) in existingSet) {
                         skipped++
                     } else {
-                        repository.insertTextPair(pair)
+                        val pair = TextPair(original = original, translated = translated)
+                        val id = repository.insertTextPair(pair)
+                        if (metadataViewModel != null && categories.isNotEmpty()) {
+                            metadataViewModel.updateSelectedCategories(categories)
+                            id.onSuccess { longId ->
+                                metadataViewModel.saveMetadata(longId.toInt())
+                            }
+                        }
                         imported++
                     }
                 }

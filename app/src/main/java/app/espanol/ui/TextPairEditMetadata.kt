@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -46,10 +45,10 @@ import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun TextPairEditMetadata(
-    textPairId: Int,
+    textPairId: Int, // This is the id of the text pair
     viewModel: TextPairMetadataViewModel,
     onDismiss: () -> Unit,
-    showButtons: Boolean = true // Add flag
+    showButtons: Boolean = true
 ) {
     var newCategory by remember { mutableStateOf("") }
     val selectedCategories by viewModel.selectedCategories.collectAsStateWithLifecycle()

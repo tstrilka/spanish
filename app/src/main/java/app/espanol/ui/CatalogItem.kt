@@ -175,79 +175,83 @@ fun CatalogItem(
                 // Remove the old Edit Categories button (and any related code)
             } else {
                 // Display mode
-                Text(
-                    text = "Czech: ${textPair.original}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Spanish: ${textPair.translated}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.secondary
-                    }
-                )
-
-                // Always show categories label and chips, even if empty
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Categories:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (categories.isNotEmpty()) {
-                        categories.forEach { category ->
-                            SuggestionChip(
-                                onClick = { },
-                                label = { Text(category) }
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = "None",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Remove the Categories button from view mode for simpler flow
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { onEdit() }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Czech: ${textPair.original}",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Spanish: ${textPair.translated}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.secondary
-                            },
-                            modifier = Modifier.size(24.dp)
+                            }
                         )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Categories:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            if (categories.isNotEmpty()) {
+                                categories.forEach { category ->
+                                    SuggestionChip(
+                                        onClick = { },
+                                        label = { Text(category) }
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = "None",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
-                    IconButton(onClick = { onDelete() }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
+                    // Place edit and delete buttons vertically at the right edge
+                    Column(
+                        modifier = Modifier.padding(start = 8.dp),
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        IconButton(onClick = { onEdit() }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.secondary
+                                },
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        IconButton(onClick = { onDelete() }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 }
             }
