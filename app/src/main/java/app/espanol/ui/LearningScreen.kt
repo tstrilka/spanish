@@ -1,6 +1,10 @@
 package app.espanol.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,28 +13,44 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.espanol.ui.theme.SpanishBrown
-import app.espanol.ui.theme.SpanishGoldDark
+import app.espanol.data.TextPair
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LearningScreen(
     modifier: Modifier = Modifier,
@@ -42,6 +62,8 @@ fun LearningScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val learningMode by viewModel.learningMode.collectAsStateWithLifecycle()
     val hasPlayedAudio by viewModel.hasPlayedAudio.collectAsStateWithLifecycle()
+    val availableCategories by viewModel.availableCategories.collectAsStateWithLifecycle()
+    val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.loadNextPair()
@@ -51,327 +73,333 @@ fun LearningScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Mode selector
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 24.dp)
-        ) {
-            Text(
-                text = "Visual",
-                color = if (learningMode == LearningMode.VISUAL) {
-                    if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    }
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                fontWeight = if (learningMode == LearningMode.VISUAL) FontWeight.Bold else FontWeight.Normal
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Switch(
-                checked = learningMode == LearningMode.LISTENING,
-                onCheckedChange = { isListening ->
-                    viewModel.setLearningMode(
-                        if (isListening) LearningMode.LISTENING else LearningMode.VISUAL
-                    )
-                },
-                colors = androidx.compose.material3.SwitchDefaults.colors(
-                    checkedThumbColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.primaryContainer
-                    },
-                    checkedTrackColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                    } else {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                    },
-                    uncheckedThumbColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.outline
-                    } else {
-                        MaterialTheme.colorScheme.outlineVariant
-                    },
-                    uncheckedTrackColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    }
-                )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Listening",
-                color = if (learningMode == LearningMode.LISTENING) {
-                    if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    }
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                fontWeight = if (learningMode == LearningMode.LISTENING) FontWeight.Bold else FontWeight.Normal
-            )
-        }
-        if (isLoading) {
-            CircularProgressIndicator()
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Loading next word...")
-        } else if (currentPair != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(bottom = 16.dp)) {
+            SegmentedButton(
+                selected = learningMode == LearningMode.VISUAL,
+                onClick = { viewModel.setLearningMode(LearningMode.VISUAL) },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Text("Visual")
+            }
+
+            SegmentedButton(
+                selected = learningMode == LearningMode.LISTENING,
+                onClick = { viewModel.setLearningMode(LearningMode.LISTENING) },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            ) {
+                Text("Listening")
+            }
+        }
+
+        var expanded by remember { mutableStateOf(false) }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            var expanded by remember { mutableStateOf(false) }
+            val focusRequester = remember { FocusRequester() }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = it }
+            ) {
+                TextField(
+                    value = selectedCategory ?: "All Categories",
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                        .focusRequester(focusRequester),
+                    label = { Text("Category") }
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
                 ) {
-                    when (learningMode) {
-                        LearningMode.VISUAL -> {
-                            // Traditional visual learning mode
-                            Text(
-                                text = "Translate to Spanish:",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+                    DropdownMenuItem(
+                        text = { Text("All Categories") },
+                        onClick = {
+                            viewModel.setSelectedCategory(null)
+                            expanded = false
+                        }
+                    )
 
-                            Text(
-                                text = currentPair?.original ?: "",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            if (showTranslation) {
-                                Text(
-                                    text = "Spanish:",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = currentPair?.translated ?: "",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                        SpanishBrown
-                                    } else {
-                                        SpanishGoldDark
-                                    }
-                                )
-                            } else {
-                                Text(
-                                    text = "Think of the Spanish translation, then:",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                    availableCategories.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category) },
+                            onClick = {
+                                viewModel.setSelectedCategory(category)
+                                expanded = false
                             }
-                        }
-
-                        LearningMode.LISTENING -> {
-                            // New listening learning mode
-                            Text(
-                                text = "Listen and understand:",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = "🎧",
-                                style = MaterialTheme.typography.displayMedium
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            if (!hasPlayedAudio) {
-                                Text(
-                                    text = "Play the Spanish audio first:",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Button(
-                                    onClick = {
-                                        currentPair?.let { pair ->
-                                            onSpeak(pair.translated)
-                                            viewModel.markAudioPlayed()
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.secondary,
-                                        contentColor = MaterialTheme.colorScheme.onSecondary
-                                    )
-                                ) {
-                                    Text("🔊 Play Spanish")
-                                }
-                            } else {
-                                if (showTranslation) {
-                                    Text(
-                                        text = "Spanish:",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = currentPair?.translated ?: "",
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                            SpanishBrown
-                                        } else {
-                                            SpanishGoldDark
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    Text(
-                                        text = "Czech meaning:",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = currentPair?.original ?: "",
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    Button(
-                                        onClick = {
-                                            currentPair?.let { pair -> onSpeak(pair.translated) }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.secondary,
-                                            contentColor = MaterialTheme.colorScheme.onSecondary
-                                        )
-                                    ) {
-                                        Text("🔊 Play Again")
-                                    }
-                                } else {
-                                    Text(
-                                        text = "Did you understand the meaning?",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    Button(
-                                        onClick = {
-                                            currentPair?.let { pair -> onSpeak(pair.translated) }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.secondary,
-                                            contentColor = MaterialTheme.colorScheme.onSecondary
-                                        )
-                                    ) {
-                                        Text("🔊 Play Again")
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Show translation button (for visual mode or after audio played)
-                    if ((learningMode == LearningMode.VISUAL && !showTranslation) ||
-                        (learningMode == LearningMode.LISTENING && hasPlayedAudio && !showTranslation)
-                    ) {
-                        Button(
-                            onClick = { viewModel.showTranslation() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.secondary
-                                },
-                                contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.colorScheme.onSecondary
-                                }
-                            )
-                        ) {
-                            Text(if (learningMode == LearningMode.VISUAL) "Show Translation" else "Show Answer")
-                        }
-                    }
-
-                    // Result buttons (show after translation is revealed)
-                    if (showTranslation) {
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = if (learningMode == LearningMode.VISUAL) {
-                                "How did you do?"
-                            } else {
-                                "Did you understand correctly?"
-                            },
-                            style = MaterialTheme.typography.bodyLarge
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    viewModel.markResult(true)
-                                    viewModel.loadNextPair()
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF4CAF50),
-                                    contentColor = Color.White
-                                )
-                            ) {
-                                Text("✓ " + if (learningMode == LearningMode.VISUAL) "Correct" else "Understood")
-                            }
-                            Button(
-                                onClick = {
-                                    viewModel.markResult(false)
-                                    viewModel.loadNextPair()
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                        Color(0xFFD32F2F)
-                                    } else {
-                                        Color(0xFFEF5350)
-                                    },
-                                    contentColor = Color.White
-                                )
-                            ) {
-                                Text("✗ " + if (learningMode == LearningMode.VISUAL) "Wrong" else "Didn't understand")
-                            }
-                        }
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = { viewModel.loadNextPair() },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.outline
-                    } else {
-                        MaterialTheme.colorScheme.outlineVariant
-                    },
-                    contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(48.dp))
+            } else if (currentPair == null) {
+                Text(
+                    text = "No learning pairs available.\nAdd some translations first.",
+                    textAlign = TextAlign.Center
                 )
+            } else {
+                when (learningMode) {
+                    LearningMode.VISUAL -> VisualLearningContent(
+                        pair = currentPair!!,
+                        showTranslation = showTranslation,
+                        onShowTranslation = { viewModel.showTranslation() },
+                        onSpeak = onSpeak
+                    )
+
+                    LearningMode.LISTENING -> ListeningLearningContent(
+                        pair = currentPair!!,
+                        showTranslation = showTranslation,
+                        hasPlayedAudio = hasPlayedAudio,
+                        onShowTranslation = { viewModel.showTranslation() },
+                        onSpeak = {
+                            onSpeak(currentPair!!.translated)
+                            viewModel.markAudioPlayed()
+                        }
+                    )
+                }
+            }
+        }
+
+        if (currentPair != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Skip to Next Word")
+                Button(
+                    onClick = {
+                        viewModel.markResult(false)
+                        viewModel.loadNextPair()
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Clear, contentDescription = "Incorrect")
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("Incorrect")
+                }
+
+                Spacer(modifier = Modifier.size(16.dp))
+
+                Button(
+                    onClick = {
+                        viewModel.markResult(true)
+                        viewModel.loadNextPair()
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = "Correct")
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("Correct")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = { viewModel.loadNextPair() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Skip")
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("Skip")
             }
         } else {
-            Text(
-                text = "No translations available for learning.\nAdd some translations first!",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Button(
+                onClick = { viewModel.loadNextPair() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Try Again")
+            }
+        }
+    }
+}
+
+@Composable
+fun VisualLearningContent(
+    pair: TextPair,
+    showTranslation: Boolean,
+    onShowTranslation: () -> Unit,
+    onSpeak: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Czech",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.secondary
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = pair.original,
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Spanish",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (showTranslation) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = pair.translated,
+                            style = MaterialTheme.typography.headlineMedium,
+                            textAlign = TextAlign.Center
+                        )
+
+                        IconButton(onClick = { onSpeak(pair.translated) }) {
+                            Icon(
+                                Icons.Default.VolumeUp,
+                                contentDescription = "Speak",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                } else {
+                    Button(onClick = onShowTranslation) {
+                        Text("Reveal Translation")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ListeningLearningContent(
+    pair: TextPair,
+    showTranslation: Boolean,
+    hasPlayedAudio: Boolean,
+    onShowTranslation: () -> Unit,
+    onSpeak: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Listen and Learn",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        Button(
+            onClick = onSpeak,
+            modifier = Modifier.padding(vertical = 16.dp)
+        ) {
+            Icon(Icons.Default.VolumeUp, contentDescription = "Play audio")
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("Play Spanish Audio")
+        }
+
+        AnimatedVisibility(
+            visible = hasPlayedAudio,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (showTranslation) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Spanish",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Text(
+                                text = pair.translated,
+                                style = MaterialTheme.typography.headlineMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            Text(
+                                text = "Czech",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(top = 16.dp)
+                            )
+
+                            Text(
+                                text = pair.original,
+                                style = MaterialTheme.typography.headlineMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = onShowTranslation,
+                        modifier = Modifier.padding(top = 16.dp)
+                    ) {
+                        Text("Show Meaning")
+                    }
+                }
+            }
         }
     }
 }

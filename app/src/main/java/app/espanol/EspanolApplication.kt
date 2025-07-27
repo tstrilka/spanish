@@ -1,6 +1,7 @@
 package app.espanol
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -17,6 +18,12 @@ class EspanolApplication : Application(), DefaultLifecycleObserver {
     override fun onCreate() {
         super<Application>.onCreate()
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Log.e("FATAL", "Uncaught exception on thread ${thread.name}", throwable)
+            throwable.printStackTrace()
+            android.os.Process.killProcess(android.os.Process.myPid())
+        }
     }
 
     override fun onDestroy(owner: LifecycleOwner) {

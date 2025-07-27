@@ -5,41 +5,75 @@ import androidx.lifecycle.viewModelScope
 import app.espanol.data.LearningProgress
 import app.espanol.data.LearningProgressDao
 import app.espanol.data.TextPair
+import app.espanol.data.TextPairMetadataDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class LearningMode {
-    VISUAL,
-    LISTENING
-}
-
 @HiltViewModel
 class LearningViewModel @Inject constructor(
-    private val learningProgressDao: LearningProgressDao
+    private val learningProgressDao: LearningProgressDao,
+    private val textPairMetadataDao: TextPairMetadataDao  // Add this dependency
 ) : ViewModel() {
 
     private val _currentPair = MutableStateFlow<TextPair?>(null)
-    val currentPair: StateFlow<TextPair?> = _currentPair.asStateFlow()
-
-    private val _showTranslation = MutableStateFlow(false)
-    val showTranslation: StateFlow<Boolean> = _showTranslation.asStateFlow()
+    val currentPair: StateFlow<TextPair?> = _currentPair
 
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _learningMode = MutableStateFlow(LearningMode.VISUAL)
-    val learningMode: StateFlow<LearningMode> = _learningMode.asStateFlow()
+    private val _showTranslation = MutableStateFlow(false)
+    val showTranslation: StateFlow<Boolean> = _showTranslation
 
     private val _hasPlayedAudio = MutableStateFlow(false)
-    val hasPlayedAudio: StateFlow<Boolean> = _hasPlayedAudio.asStateFlow()
+    val hasPlayedAudio: StateFlow<Boolean> = _hasPlayedAudio
+
+    private val _learningMode = MutableStateFlow(LearningMode.VISUAL)
+    val learningMode: StateFlow<LearningMode> = _learningMode
+
+    private val _selectedCategory = MutableStateFlow<String?>(null)
+    val selectedCategory: StateFlow<String?> = _selectedCategory
+
+    private val _availableCategories = MutableStateFlow<List<String>>(emptyList())
+    val availableCategories: StateFlow<List<String>> = _availableCategories
+
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message
+
+    init {
+        loadCategories()
+    }
+
+    private fun loadCategories() {
+        viewModelScope.launch {
+            try {
+                // Only offer categories that exist in the database
+                textPairMetadataDao.getAllCategories().collect { dbCategories ->
+                    val allCategories = dbCategories
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .distinct()
+                        .sorted()
+                    _availableCategories.value = allCategories
+                }
+            } catch (e: Exception) {
+                app.espanol.util.Logger.e("Failed to load categories", e)
+                _availableCategories.value = emptyList()
+            }
+        }
+    }
+
+    fun setSelectedCategory(category: String?) {
+        _selectedCategory.value = category
+        loadNextPair()
+    }
 
     fun setLearningMode(mode: LearningMode) {
         _learningMode.value = mode
-        loadNextPair()
+        _hasPlayedAudio.value = false
+        _showTranslation.value = false
     }
 
     fun loadNextPair() {
@@ -48,12 +82,17 @@ class LearningViewModel @Inject constructor(
             _showTranslation.value = false
             _hasPlayedAudio.value = false
 
-            try {
-                val pair = learningProgressDao.getRandomPairForLearning()
-                    ?: learningProgressDao.getRandomPair()
+            var pair: TextPair? = null
 
-                if (pair == null) {
-                    app.espanol.util.Logger.w("No text pairs available for learning")
+            try {
+                val category = _selectedCategory.value
+
+                pair = if (category != null) {
+                    // Use the DAO method to get a random pair for the selected category
+                    learningProgressDao.getRandomPairForLearningWithCategory(category)
+                } else {
+                    learningProgressDao.getRandomPairForLearning()
+                        ?: learningProgressDao.getRandomPair()
                 }
 
                 _currentPair.value = pair
@@ -62,6 +101,14 @@ class LearningViewModel @Inject constructor(
                 _currentPair.value = null
             } finally {
                 _isLoading.value = false
+            }
+
+            if (_currentPair.value == null && _selectedCategory.value != null) {
+                _message.value = "No items available in category '${_selectedCategory.value}'. Please select another category."
+            } else if (_currentPair.value == null) {
+                _message.value = "No items available for learning. Please add some content first."
+            } else {
+                _message.value = null
             }
         }
     }
@@ -100,4 +147,9 @@ class LearningViewModel @Inject constructor(
             }
         }
     }
+}
+
+enum class LearningMode {
+    VISUAL,
+    LISTENING
 }

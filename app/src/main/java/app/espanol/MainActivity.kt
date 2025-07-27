@@ -25,7 +25,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -183,7 +182,7 @@ class MainActivity : ComponentActivity() {
 
                         2 -> CatalogScreen(
                             modifier = Modifier.padding(innerPadding),
-                            viewModel = hiltViewModel()
+                            catalogViewModel = hiltViewModel(),
                         )
                     }
                 }
