@@ -22,4 +22,7 @@ interface TextPairMetadataDao {
 
     @Query("SELECT COUNT(*) FROM text_pair_metadata WHERE category = :category")
     suspend fun getCountForCategory(category: String): Int
+
+    @Query("SELECT textPairId FROM text_pair_metadata WHERE category = :category")
+    fun getTextPairIdsForCategory(category: String): List<Int>
 }

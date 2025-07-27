@@ -183,7 +183,6 @@ class MainActivity : ComponentActivity() {
                         2 -> CatalogScreen(
                             modifier = Modifier.padding(innerPadding),
                             catalogViewModel = hiltViewModel(),
-                            metadataViewModel = hiltViewModel()
                         )
                     }
                 }

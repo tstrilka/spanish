@@ -55,4 +55,8 @@ interface LearningProgressDao {
         LIMIT :limit
     """)
     fun getMostDifficultPairs(limit: Int): Flow<List<TextPair>>
+
+    // Add this function to resolve getPairById
+    @Query("SELECT * FROM text_pairs WHERE id = :id LIMIT 1")
+    suspend fun getPairById(id: Int): TextPair?
 }

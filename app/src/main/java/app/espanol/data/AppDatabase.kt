@@ -37,21 +37,20 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Create the new table
+                // Create the new table with composite primary key
                 database.execSQL(
                     """
             CREATE TABLE IF NOT EXISTS `text_pair_metadata` (
-                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 `textPairId` INTEGER NOT NULL,
                 `category` TEXT NOT NULL,
+                PRIMARY KEY(`textPairId`, `category`),
                 FOREIGN KEY(`textPairId`) REFERENCES `text_pairs`(`id`) ON DELETE CASCADE
             )
         """
                 )
 
-                // Create indices
+                // Create index
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_text_pair_metadata_textPairId` ON `text_pair_metadata` (`textPairId`)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_text_pair_metadata_category` ON `text_pair_metadata` (`category`)")
 
                 // Assign a default category to all existing text pairs
                 database.execSQL(

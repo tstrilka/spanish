@@ -49,11 +49,18 @@ class LearningViewModel @Inject constructor(
     private fun loadCategories() {
         viewModelScope.launch {
             try {
-                textPairMetadataDao.getAllCategories().collect { allCategories ->
+                // Only offer categories that exist in the database
+                textPairMetadataDao.getAllCategories().collect { dbCategories ->
+                    val allCategories = dbCategories
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .distinct()
+                        .sorted()
                     _availableCategories.value = allCategories
                 }
             } catch (e: Exception) {
                 app.espanol.util.Logger.e("Failed to load categories", e)
+                _availableCategories.value = emptyList()
             }
         }
     }
@@ -80,14 +87,11 @@ class LearningViewModel @Inject constructor(
             try {
                 val category = _selectedCategory.value
 
-                if (category != null) {
-                    pair = learningProgressDao.getRandomPairForLearningWithCategory(category)
-
-                    if (pair == null) {
-                        app.espanol.util.Logger.w("No text pairs available for learning in category: $category")
-                    }
+                pair = if (category != null) {
+                    // Use the DAO method to get a random pair for the selected category
+                    learningProgressDao.getRandomPairForLearningWithCategory(category)
                 } else {
-                    pair = learningProgressDao.getRandomPairForLearning()
+                    learningProgressDao.getRandomPairForLearning()
                         ?: learningProgressDao.getRandomPair()
                 }
 

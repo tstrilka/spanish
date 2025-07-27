@@ -1,5 +1,6 @@
 package app.espanol.ui
 
+import android.app.Application
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +19,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,30 +38,28 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.espanol.data.TextPair
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogScreen(
     modifier: Modifier = Modifier,
     catalogViewModel: CatalogViewModel,
-    metadataViewModel: TextPairMetadataViewModel,
 ) {
-    val textPairs: List<TextPair> by catalogViewModel.textPairs.collectAsStateWithLifecycle(emptyList())
-    val editingItemId: Int? by catalogViewModel.editingItemId.collectAsStateWithLifecycle()
-    val searchQuery: String by catalogViewModel.searchQuery.collectAsStateWithLifecycle()
-
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            viewModel.importCatalogFromCsv(uri)
+            catalogViewModel.importCatalogFromCsv(uri)
         }
     }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            viewModel.exportResult.collect { result ->
+            catalogViewModel.exportResult.collect { result ->
                 when (result) {
                     is ExportResult.Success -> snackbarHostState.showSnackbar("Exported to ${result.filePath}")
                     is ExportResult.Failure -> snackbarHostState.showSnackbar("Export failed")
@@ -69,7 +67,7 @@ fun CatalogScreen(
             }
         }
         coroutineScope.launch {
-            viewModel.importResult.collect { result ->
+            catalogViewModel.importResult.collect { result ->
                 when (result) {
                     is ImportResult.Success -> snackbarHostState.showSnackbar("Imported: ${result.imported}, Skipped: ${result.skipped}")
                     is ImportResult.Failure -> snackbarHostState.showSnackbar("Import failed")
@@ -94,7 +92,7 @@ fun CatalogScreen(
                 modifier = Modifier.weight(1f)
             )
             IconButton(
-                onClick = { viewModel.exportCatalogToCsv() },
+                onClick = { catalogViewModel.exportCatalogToCsv() },
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -114,7 +112,7 @@ fun CatalogScreen(
         }
         SnackbarHost(hostState = snackbarHostState)
 
-        CatalogScreenContent(viewModel = viewModel)
+        CatalogScreenContent(viewModel = catalogViewModel)
     }
 }
 
@@ -152,6 +150,17 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
         }
     }
 
+    // Use viewModel() with a factory to provide Application context
+    val context = LocalContext.current
+    val metadataViewModel: TextPairMetadataViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return TextPairMetadataViewModel(context.applicationContext as Application) as T
+            }
+        }
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -160,7 +169,7 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
 
         TextField(
             value = searchQuery,
-            onValueChange = { catalogViewModel.updateSearchQuery(it) },
+            onValueChange = { viewModel.updateSearchQuery(it) },
             label = { Text("Search translations...") },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = {
@@ -171,7 +180,7 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
             },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { catalogViewModel.updateSearchQuery("") }) {
+                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Clear search"
@@ -203,18 +212,17 @@ fun CatalogScreenContent(viewModel: CatalogViewModel) {
                     CatalogItem(
                         textPair = textPair,
                         isEditing = editingItemId == textPair.id,
-                        onEdit = { catalogViewModel.startEditing(textPair.id) },
+                        onEdit = { viewModel.startEditing(textPair.id) },
                         onSave = { updatedPair ->
-                            catalogViewModel.saveTextPair(
+                            viewModel.saveTextPair(
                                 id = updatedPair.id,
                                 original = updatedPair.original,
                                 translated = updatedPair.translated
                             )
                         },
-                        onCancel = { catalogViewModel.cancelEditing() },
-                        onDelete = { catalogViewModel.deleteTextPair(textPair.id) },
-                        metadataViewModel = metadataViewModel,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        onCancel = { viewModel.cancelEditing() },
+                        onDelete = { viewModel.deleteTextPair(textPair.id) },
+                        metadataViewModel = metadataViewModel // <-- Pass the viewmodel here!
                     )
                 }
             }

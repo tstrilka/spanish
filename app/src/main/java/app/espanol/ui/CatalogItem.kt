@@ -1,6 +1,7 @@
 package app.espanol.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -8,8 +9,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
@@ -52,10 +55,11 @@ fun CatalogItem(
     var editedOriginal by remember(textPair.original) { mutableStateOf(textPair.original) }
     var editedTranslated by remember(textPair.translated) { mutableStateOf(textPair.translated) }
     var showCategoryDialog by remember { mutableStateOf(false) }
+    var categoryVersion by remember { mutableStateOf(0) } // Add this line
 
     var categories by remember { mutableStateOf(emptyList<String>()) }
 
-    LaunchedEffect(textPair.id) {
+    LaunchedEffect(textPair.id, categoryVersion, isEditing) { // Add isEditing as a key
         metadataViewModel?.getCategoriesForTextPair(textPair.id)?.collect { newCategories ->
             categories = newCategories
         }
@@ -97,6 +101,7 @@ fun CatalogItem(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
@@ -105,6 +110,7 @@ fun CatalogItem(
                                 original = editedOriginal.trim(),
                                 translated = editedTranslated.trim()
                             ))
+                            showCategoryDialog = false
                         },
                         enabled = editedOriginal.isNotBlank() && editedTranslated.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
@@ -128,6 +134,7 @@ fun CatalogItem(
                             editedOriginal = textPair.original
                             editedTranslated = textPair.translated
                             onCancel()
+                            showCategoryDialog = false
                         },
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
@@ -139,53 +146,33 @@ fun CatalogItem(
                     ) {
                         Text("Cancel")
                     }
-                }
 
-                // Add category editing in edit mode as well
-                if (metadataViewModel != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    // Spacer between Cancel and Edit Categories
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                    // Display current categories
-                    if (categories.isNotEmpty()) {
-                        Text(
-                            text = "Categories:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            categories.forEach { category ->
-                                SuggestionChip(
-                                    onClick = { },
-                                    label = { Text(category) }
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
+                    OutlinedButton(
                         onClick = { showCategoryDialog = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary // Use primary color for better contrast
+                        ),
+                        modifier = Modifier.height(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Category,
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary // Use primary color for icon
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("Edit Categories")
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(
+                            "Edit",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary // Use primary color for text
+                        )
                     }
                 }
+
+                // Remove the old Edit Categories button (and any related code)
             } else {
                 // Display mode
                 Text(
@@ -205,52 +192,43 @@ fun CatalogItem(
                     }
                 )
 
-                // Add categories display
-                if (categories.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
+                // Always show categories label and chips, even if empty
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Categories:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (categories.isNotEmpty()) {
                         categories.forEach { category ->
                             SuggestionChip(
                                 onClick = { },
                                 label = { Text(category) }
                             )
                         }
+                    } else {
+                        Text(
+                            text = "None",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-// In display mode (when not editing), make the category button more visible
+                // Remove the Categories button from view mode for simpler flow
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),  // Add spacing between items
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Make a standalone button for categories that's clearly visible
-                    if (metadataViewModel != null) {
-                        Button(
-                            onClick = { showCategoryDialog = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Category,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text("Categories")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))  // Push the following buttons to the right
-
-                    // Your existing edit/delete buttons
+                    Spacer(modifier = Modifier.weight(1f))
                     IconButton(onClick = { onEdit() }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -263,7 +241,6 @@ fun CatalogItem(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-
                     IconButton(onClick = { onDelete() }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -277,27 +254,35 @@ fun CatalogItem(
         }
     }
 
-    // Show the category dialog as an overlay
+    // Show the category dialog as a full-screen overlay for visibility
     if (showCategoryDialog && metadataViewModel != null) {
-        // The dialog overlay
+        val editedTextPair = textPair.copy(
+            original = editedOriginal.trim(),
+            translated = editedTranslated.trim()
+        )
         androidx.compose.material3.Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background.copy(alpha = 0.6f)
+            modifier = Modifier
+                .fillMaxSize(),
+            color = MaterialTheme.colorScheme.background.copy(alpha = 0.98f)
         ) {
-            // Make sure TextPairEditMetadata loads and refreshes the data for this text pair
-            LaunchedEffect(textPair.id) {
-                metadataViewModel.loadCategoriesForTextPair(textPair.id)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .heightIn(max = 500.dp)
+            ) {
+                // Save categories immediately when changed
+                TextPairEditMetadata(
+                    textPairId = editedTextPair.id,
+                    viewModel = metadataViewModel,
+                    onDismiss = {
+                        showCategoryDialog = false
+                        metadataViewModel.saveMetadata(editedTextPair.id)
+                        categoryVersion++ // Increment to trigger reload
+                    },
+                    showButtons = false
+                )
             }
-
-            TextPairEditMetadata(
-                textPairId = textPair.id,
-                viewModel = metadataViewModel,
-                onDismiss = {
-                    showCategoryDialog = false
-                    // Reload categories after editing
-                    metadataViewModel.saveMetadata(textPair.id)
-                }
-            )
         }
     }
 }

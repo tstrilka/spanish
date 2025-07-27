@@ -1,53 +1,37 @@
 package app.espanol.ui
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import app.espanol.data.TextPairMetadataRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import app.espanol.data.AppDatabase
+import app.espanol.data.TextPairMetadata
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class TextPairMetadataViewModel @Inject constructor(
-    private val metadataRepository: TextPairMetadataRepository
-) : ViewModel() {
+class TextPairMetadataViewModel(application: Application) : AndroidViewModel(application) {
+    private val db = AppDatabase.getDatabase(application)
+    private val metadataDao = db.textPairMetadataDao()
 
-    private val _categories = MutableStateFlow<List<String>>(emptyList())
-    val categories: StateFlow<List<String>> = _categories.asStateFlow()
+    // All available categories (from Room)
+    val categories: StateFlow<List<String>> = metadataDao.getAllCategories()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Currently selected categories for the active text pair
     private val _selectedCategories = MutableStateFlow<List<String>>(emptyList())
     val selectedCategories: StateFlow<List<String>> = _selectedCategories.asStateFlow()
 
-    private val categoriesCache = mutableMapOf<Int, MutableStateFlow<List<String>>>()
-
-    init {
-        viewModelScope.launch {
-            metadataRepository.getAllCategories().collect { allCategories ->
-                _categories.value = allCategories
-            }
+    fun getCategoriesForTextPair(id: Int): Flow<List<String>> =
+        flow {
+            emit(metadataDao.getMetadataForTextPair(id).map { it.category })
         }
-    }
 
-    fun getCategoriesForTextPair(textPairId: Int): StateFlow<List<String>> {
-        return categoriesCache.getOrPut(textPairId) {
-            MutableStateFlow<List<String>>(emptyList()).also { flow ->
-                viewModelScope.launch {
-                    val metadata = metadataRepository.getMetadataForTextPair(textPairId)
-                    flow.value = metadata.map { it.category }
-                }
-            }
-        }
-    }
+    fun getTextPairIdsForCategory(category: String): List<Int> =
+        metadataDao.getTextPairIdsForCategory(category)
 
-    fun loadCategoriesForTextPair(textPairId: Int) {
+    fun loadCategoriesForTextPair(id: Int) {
         viewModelScope.launch {
-            val metadata = metadataRepository.getMetadataForTextPair(textPairId)
-            _selectedCategories.value = metadata.map { it.category }
-
-            categoriesCache[textPairId]?.value = metadata.map { it.category }
+            val categories = metadataDao.getMetadataForTextPair(id).map { it.category }
+            _selectedCategories.value = categories
         }
     }
 
@@ -55,15 +39,19 @@ class TextPairMetadataViewModel @Inject constructor(
         _selectedCategories.value = categories
     }
 
-    fun saveMetadata(textPairId: Int): Boolean {
-        var success = false
+    fun saveMetadata(id: Int) {
         viewModelScope.launch {
-            metadataRepository.updateMetadataForTextPair(textPairId, _selectedCategories.value)
-                .onSuccess {
-                    success = true
-                    categoriesCache[textPairId]?.value = _selectedCategories.value
-                }
+            // Remove all previous categories for this text pair
+            metadataDao.deleteAllForTextPair(id)
+            // Save all selected categories as-is (do not auto-remove "Uncategorized")
+            val categoriesToSave = _selectedCategories.value.ifEmpty { listOf("Uncategorized") }
+            categoriesToSave.forEach { category ->
+                metadataDao.insertMetadata(TextPairMetadata(textPairId = id, category = category))
+            }
         }
-        return success
+    }
+
+    companion object {
+        val defaultCategories = listOf("Food", "Travel", "Work", "Family")
     }
 }
