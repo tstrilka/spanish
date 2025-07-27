@@ -187,6 +187,25 @@ fun LearningScreen(
                     .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Correct button: use explicit green color
+                Button(
+                    onClick = {
+                        viewModel.markResult(true)
+                        viewModel.loadNextPair()
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = androidx.compose.ui.graphics.Color(0xFF4CAF50), // Green
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = "Correct")
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("Correct")
+                }
+
+                Spacer(modifier = Modifier.size(16.dp))
+
                 Button(
                     onClick = {
                         viewModel.markResult(false)
@@ -197,20 +216,6 @@ fun LearningScreen(
                     Icon(Icons.Default.Clear, contentDescription = "Incorrect")
                     Spacer(modifier = Modifier.size(8.dp))
                     Text("Incorrect")
-                }
-
-                Spacer(modifier = Modifier.size(16.dp))
-
-                Button(
-                    onClick = {
-                        viewModel.markResult(true)
-                        viewModel.loadNextPair()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = "Correct")
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text("Correct")
                 }
             }
 
@@ -249,7 +254,7 @@ fun VisualLearningContent(
         Text(
             text = "Czech",
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.secondary
+            color = MaterialTheme.colorScheme.onBackground // Make label black (or dark on light theme)
         )
 
         Card(
@@ -379,7 +384,7 @@ fun ListeningLearningContent(
                             Text(
                                 text = "Czech",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.secondary,
+                                color = MaterialTheme.colorScheme.onBackground, // Make label black
                                 modifier = Modifier.padding(top = 16.dp)
                             )
 
