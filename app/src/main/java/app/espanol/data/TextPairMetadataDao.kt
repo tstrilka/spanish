@@ -25,4 +25,11 @@ interface TextPairMetadataDao {
 
     @Query("SELECT textPairId FROM text_pair_metadata WHERE category = :category")
     fun getTextPairIdsForCategory(category: String): List<Int>
+
+    @Query("""
+        SELECT tp.* FROM text_pairs tp
+        JOIN text_pair_metadata tpm ON tp.id = tpm.textPairId
+        WHERE LOWER(tpm.category) = LOWER(:category)
+    """)
+    suspend fun getPairsForCategory(category: String): List<TextPair>
 }

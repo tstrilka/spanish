@@ -114,16 +114,8 @@ fun CatalogItem(
                         },
                         enabled = editedOriginal.isNotBlank() && editedTranslated.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.primaryContainer
-                            },
-                            contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            }
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = androidx.compose.ui.graphics.Color.White // White text
                         )
                     ) {
                         Text("Save")
@@ -137,37 +129,35 @@ fun CatalogItem(
                             showCategoryDialog = false
                         },
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         )
                     ) {
                         Text("Cancel")
                     }
 
-                    // Spacer between Cancel and Edit Categories
                     Spacer(modifier = Modifier.width(8.dp))
 
+                    // Show both edit and category icons for the category edit button
                     OutlinedButton(
                         onClick = { showCategoryDialog = true },
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary // Use primary color for better contrast
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.secondary
                         ),
                         modifier = Modifier.height(40.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Category,
-                            contentDescription = null,
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
                             modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.primary // Use primary color for icon
+                            tint = MaterialTheme.colorScheme.secondary
                         )
-                        Spacer(modifier = Modifier.size(6.dp))
-                        Text(
-                            "Edit",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary // Use primary color for text
+                        Spacer(modifier = Modifier.size(2.dp))
+                        Icon(
+                            imageVector = Icons.Default.Category,
+                            contentDescription = "Edit categories",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.secondary
                         )
                     }
                 }
@@ -232,24 +222,27 @@ fun CatalogItem(
                         verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.End
                     ) {
-                        IconButton(onClick = { onEdit() }) {
+                        IconButton(
+                            onClick = { onEdit() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit",
-                                tint = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.secondary
-                                },
-                                modifier = Modifier.size(22.dp)
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 1f),
+                                modifier = Modifier.size(28.dp)
                             )
                         }
-                        IconButton(onClick = { onDelete() }) {
+                        Spacer(modifier = Modifier.height(16.dp)) // Add more space between buttons
+                        IconButton(
+                            onClick = { onDelete() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = "Delete",
                                 tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(28.dp)
                             )
                         }
                     }
@@ -272,7 +265,7 @@ fun CatalogItem(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(2.dp)
                     .heightIn(max = 500.dp)
             ) {
                 // Save categories immediately when changed
@@ -282,7 +275,7 @@ fun CatalogItem(
                     onDismiss = {
                         showCategoryDialog = false
                         metadataViewModel.saveMetadata(editedTextPair.id)
-                        categoryVersion++ // Increment to trigger reload
+                        categoryVersion++
                     },
                     showButtons = false
                 )

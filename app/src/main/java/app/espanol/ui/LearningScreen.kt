@@ -196,7 +196,7 @@ fun LearningScreen(
                     modifier = Modifier.weight(1f),
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = androidx.compose.ui.graphics.Color(0xFF4CAF50), // Green
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                        contentColor = androidx.compose.ui.graphics.Color.White // White text
                     )
                 ) {
                     Icon(Icons.Default.Check, contentDescription = "Correct")
@@ -211,7 +211,10 @@ fun LearningScreen(
                         viewModel.markResult(false)
                         viewModel.loadNextPair()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                    )
                 ) {
                     Icon(Icons.Default.Clear, contentDescription = "Incorrect")
                     Spacer(modifier = Modifier.size(8.dp))
@@ -223,7 +226,10 @@ fun LearningScreen(
 
             OutlinedButton(
                 onClick = { viewModel.loadNextPair() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    contentColor = androidx.compose.ui.graphics.Color.White // White text
+                )
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = "Skip")
                 Spacer(modifier = Modifier.size(8.dp))
@@ -232,7 +238,11 @@ fun LearningScreen(
         } else {
             Button(
                 onClick = { viewModel.loadNextPair() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = androidx.compose.ui.graphics.Color.White // White text
+                )
             ) {
                 Text("Try Again")
             }
@@ -254,7 +264,7 @@ fun VisualLearningContent(
         Text(
             text = "Czech",
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onBackground // Make label black (or dark on light theme)
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Card(
@@ -303,16 +313,27 @@ fun VisualLearningContent(
                             textAlign = TextAlign.Center
                         )
 
-                        IconButton(onClick = { onSpeak(pair.translated) }) {
+                        // Make the play sound icon more visible: larger size and accent color
+                        IconButton(
+                            onClick = { onSpeak(pair.translated) },
+                            modifier = Modifier.size(48.dp)
+                        ) {
                             Icon(
                                 Icons.Default.VolumeUp,
                                 contentDescription = "Speak",
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(36.dp)
                             )
                         }
                     }
                 } else {
-                    Button(onClick = onShowTranslation) {
+                    Button(
+                        onClick = onShowTranslation,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = androidx.compose.ui.graphics.Color.White
+                        )
+                    ) {
                         Text("Reveal Translation")
                     }
                 }
@@ -340,11 +361,23 @@ fun ListeningLearningContent(
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
+        // Make the play sound button/icon more visible
         Button(
             onClick = onSpeak,
-            modifier = Modifier.padding(vertical = 16.dp)
+            modifier = Modifier
+                .padding(vertical = 16.dp)
+                .height(56.dp),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = androidx.compose.ui.graphics.Color.White
+            )
         ) {
-            Icon(Icons.Default.VolumeUp, contentDescription = "Play audio")
+            Icon(
+                Icons.Default.VolumeUp,
+                contentDescription = "Play audio",
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(32.dp)
+            )
             Spacer(modifier = Modifier.size(8.dp))
             Text("Play Spanish Audio")
         }
@@ -384,7 +417,7 @@ fun ListeningLearningContent(
                             Text(
                                 text = "Czech",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onBackground, // Make label black
+                                color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(top = 16.dp)
                             )
 
@@ -399,7 +432,11 @@ fun ListeningLearningContent(
                 } else {
                     Button(
                         onClick = onShowTranslation,
-                        modifier = Modifier.padding(top = 16.dp)
+                        modifier = Modifier.padding(top = 16.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = androidx.compose.ui.graphics.Color.White
+                        )
                     ) {
                         Text("Show Meaning")
                     }

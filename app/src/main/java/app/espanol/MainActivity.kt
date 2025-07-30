@@ -7,23 +7,39 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabPosition
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -100,67 +116,10 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = { currentMode = 0 },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (currentMode == 0) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant
-                                        },
-                                        contentColor = if (currentMode == 0) {
-                                            Color.White
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
-                                    ),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Translate")
-                                }
-
-                                Button(
-                                    onClick = { currentMode = 1 },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (currentMode == 1) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant
-                                        },
-                                        contentColor = if (currentMode == 1) {
-                                            Color.White
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
-                                    ),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Learn")
-                                }
-
-                                Button(
-                                    onClick = { currentMode = 2 },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (currentMode == 2) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant
-                                        },
-                                        contentColor = if (currentMode == 2) {
-                                            Color.White
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
-                                    ),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Catalog")
-                                }
-                            }
+                            ModeSwitcher(
+                                currentMode = currentMode,
+                                onModeChange = { currentMode = it }
+                            )
                         }
                     }
                 ) { innerPadding ->
@@ -204,5 +163,28 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         ttsManager.shutdown()
         speechRecognitionManager.destroy()
+    }
+}
+
+@Composable
+fun ModeSwitcher(
+    currentMode: Int,
+    onModeChange: (Int) -> Unit
+) {
+    val modes = listOf("Translate", "Learn", "Catalog")
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        modes.forEachIndexed { idx, label ->
+            SegmentedButton(
+                selected = currentMode == idx,
+                onClick = { onModeChange(idx) },
+                shape = SegmentedButtonDefaults.itemShape(idx, modes.size),
+            ) {
+                Text(label)
+            }
+        }
     }
 }

@@ -42,6 +42,8 @@ class LearningViewModel @Inject constructor(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
 
+    private var lastPairId: Int? = null
+
     init {
         loadCategories()
     }
@@ -87,15 +89,40 @@ class LearningViewModel @Inject constructor(
             try {
                 val category = _selectedCategory.value
 
-                pair = if (category != null) {
-                    // Use the DAO method to get a random pair for the selected category
-                    learningProgressDao.getRandomPairForLearningWithCategory(category)
+                if (category != null) {
+                    // Try to get a "fresh" pair first
+                    val freshPair = learningProgressDao.getRandomPairForLearningWithCategory(category)
+                    if (freshPair != null && freshPair.id != lastPairId) {
+                        pair = freshPair
+                      } else {
+                        // Fallback: get any pair from the category, even if recently attempted
+                        val allPairs = textPairMetadataDao.getPairsForCategory(category)
+                        val filtered = allPairs.filter { it.id != lastPairId }
+                        pair = when {
+                            filtered.isNotEmpty() -> filtered.shuffled().first()
+                            allPairs.isNotEmpty() -> allPairs.first() // Only one, allow repeat
+                            else -> null
+                        }
+                    }
                 } else {
-                    learningProgressDao.getRandomPairForLearning()
-                        ?: learningProgressDao.getRandomPair()
+                    val freshPair = learningProgressDao.getRandomPairForLearning()
+                    if (freshPair != null && freshPair.id != lastPairId) {
+                        pair = freshPair
+                    } else {
+                        val allPairs = mutableListOf<TextPair>()
+                        val randomPair = learningProgressDao.getRandomPair()
+                        if (randomPair != null) allPairs.add(randomPair)
+                        val filtered = allPairs.filter { it.id != lastPairId }
+                        pair = when {
+                            filtered.isNotEmpty() -> filtered.shuffled().first()
+                            allPairs.isNotEmpty() -> allPairs.first()
+                            else -> null
+                        }
+                    }
                 }
 
                 _currentPair.value = pair
+                lastPairId = pair?.id
             } catch (e: Exception) {
                 app.espanol.util.Logger.e("Failed to load learning pair", e)
                 _currentPair.value = null
