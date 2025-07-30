@@ -1,2 +1,2 @@
-# espagnol
-espagnol learning app for android, limitted to czech language. no localization yet
+# spanish learning app for android
+limited to czech language. no localization yet

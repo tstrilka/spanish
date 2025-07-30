@@ -2,7 +2,7 @@
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *
 -dontwarn androidx.room.paging.**
--keep class app.espanol.data.** { *; }
+-keep class app.spanish.data.** { *; }
 
 # Hilt
 -dontwarn dagger.hilt.processor.internal.**

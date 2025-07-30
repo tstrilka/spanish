@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "app.espanol"
+    namespace = "app.spanish"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "app.espanol"
+        applicationId = "app.spanish"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
