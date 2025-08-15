@@ -5,7 +5,7 @@ limited to czech language. no localization yet
 vocabulary files with sample data:
 * [catalog with 418 items](data/catalog-418-items.csv)
 
-catalog file can be into the installed application from catalog screen by clicking
+catalog file can be imported into the installed application from catalog screen by clicking
 on the UP icon and selecting the catalog file
 
 # releases
