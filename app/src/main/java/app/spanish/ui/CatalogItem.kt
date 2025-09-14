@@ -29,7 +29,6 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.spanish.data.TextPair
 
 @Composable
@@ -57,13 +57,10 @@ fun CatalogItem(
     var showCategoryDialog by remember { mutableStateOf(false) }
     var categoryVersion by remember { mutableStateOf(0) } // Add this line
 
-    var categories by remember { mutableStateOf(emptyList<String>()) }
-
-    LaunchedEffect(textPair.id, categoryVersion, isEditing) { // Add isEditing as a key
-        metadataViewModel?.getCategoriesForTextPair(textPair.id)?.collect { newCategories ->
-            categories = newCategories
-        }
-    }
+    val categories = metadataViewModel
+        ?.getCategoriesForTextPair(textPair.id)
+        ?.collectAsStateWithLifecycle(emptyList())
+        ?.value ?: emptyList()
 
     Card(
         modifier = modifier.fillMaxWidth(),

@@ -5,7 +5,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.spanish.data.AppDatabase
 import app.spanish.data.TextPairMetadata
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class TextPairMetadataViewModel(application: Application) : AndroidViewModel(application) {
@@ -21,12 +27,8 @@ class TextPairMetadataViewModel(application: Application) : AndroidViewModel(app
     val selectedCategories: StateFlow<List<String>> = _selectedCategories.asStateFlow()
 
     fun getCategoriesForTextPair(id: Int): Flow<List<String>> =
-        flow {
-            emit(metadataDao.getMetadataForTextPair(id).map { it.category })
-        }
-
-    fun getTextPairIdsForCategory(category: String): List<Int> =
-        metadataDao.getTextPairIdsForCategory(category)
+        metadataDao.getMetadataForTextPairFlow(id)
+            .map { it.map { meta -> meta.category } }
 
     fun loadCategoriesForTextPair(id: Int) {
         viewModelScope.launch {
@@ -48,6 +50,24 @@ class TextPairMetadataViewModel(application: Application) : AndroidViewModel(app
             categoriesToSave.forEach { category ->
                 metadataDao.insertMetadata(TextPairMetadata(textPairId = id, category = category))
             }
+        }
+    }
+
+    fun renameCategory(oldName: String, newName: String) {
+        viewModelScope.launch {
+            db.textPairMetadataDao().renameCategory(oldName, newName)
+        }
+    }
+
+    fun removeCategory(category: String) {
+        viewModelScope.launch {
+            db.textPairMetadataDao().removeCategory(category)
+        }
+    }
+
+    fun joinCategories(catA: String, catB: String, mergedName: String) {
+        viewModelScope.launch {
+            db.textPairMetadataDao().joinCategories(catA, catB, mergedName)
         }
     }
 

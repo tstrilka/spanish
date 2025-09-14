@@ -1,6 +1,5 @@
 package app.spanish.ui
 
-import android.app.Application
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
@@ -30,14 +30,15 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import app.spanish.data.TextPair
 import kotlinx.coroutines.launch
 
@@ -49,17 +50,9 @@ fun CatalogScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    var showManageCategoriesDialog by remember { mutableStateOf(false) }
 
-    // Move metadataViewModel creation here so it is available for import/export
-    val context = LocalContext.current
-    val metadataViewModel: TextPairMetadataViewModel = viewModel(
-        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return TextPairMetadataViewModel(context.applicationContext as Application) as T
-            }
-        }
-    )
+    val metadataViewModel: TextPairMetadataViewModel = hiltViewModel()
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -102,6 +95,26 @@ fun CatalogScreen(
                 modifier = Modifier.weight(1f)
             )
             IconButton(
+                onClick = { showManageCategoriesDialog = true },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Category,
+                    contentDescription = "Manage Categories"
+                )
+            }
+
+            if (showManageCategoriesDialog) {
+                ManageCategoriesDialog(
+                    viewModel = metadataViewModel,
+                    onDismiss = {
+                        showManageCategoriesDialog = false
+                        catalogViewModel.updateSearchQuery(catalogViewModel.searchQuery.value)
+                    }
+                )
+            }
+
+            IconButton(
                 onClick = { catalogViewModel.exportCatalogToCsv(metadataViewModel) },
                 modifier = Modifier.size(40.dp)
             ) {
@@ -126,7 +139,6 @@ fun CatalogScreen(
     }
 }
 
-// Update CatalogScreenContent to accept metadataViewModel as a parameter
 @Composable
 fun CatalogScreenContent(viewModel: CatalogViewModel, metadataViewModel: TextPairMetadataViewModel) {
     val textPairs: List<TextPair> by viewModel.textPairs.collectAsStateWithLifecycle(emptyList())
