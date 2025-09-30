@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
@@ -28,6 +31,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
@@ -64,6 +68,10 @@ fun LearningScreen(
     val hasPlayedAudio by viewModel.hasPlayedAudio.collectAsStateWithLifecycle()
     val availableCategories by viewModel.availableCategories.collectAsStateWithLifecycle()
     val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
+    val categoryTotalCount by viewModel.categoryTotalCount.collectAsStateWithLifecycle()
+    val categorySuccessCount by viewModel.categorySuccessCount.collectAsStateWithLifecycle()
+    val progress =
+        if (categoryTotalCount > 0) categorySuccessCount / categoryTotalCount.toFloat() else 0f
 
     LaunchedEffect(Unit) {
         viewModel.loadNextPair()
@@ -180,6 +188,31 @@ fun LearningScreen(
             }
         }
 
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(8.dp)
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(
+                text = "$categorySuccessCount/$categoryTotalCount",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            IconButton(
+                onClick = { viewModel.resetCategoryProgress() },
+                enabled = selectedCategory != null && categoryTotalCount > 0
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Reset Progress")
+            }
+        }
+
         if (currentPair != null) {
             Row(
                 modifier = Modifier
@@ -187,7 +220,6 @@ fun LearningScreen(
                     .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Correct button: use explicit green color
                 Button(
                     onClick = {
                         viewModel.markResult(true)
@@ -273,9 +305,13 @@ fun VisualLearningContent(
                 .padding(vertical = 8.dp),
             shape = RoundedCornerShape(12.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp, max = 180.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = pair.original,
@@ -306,23 +342,31 @@ fun VisualLearningContent(
                 contentAlignment = Alignment.Center
             ) {
                 if (showTranslation) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp, max = 180.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                    ) {
                         Text(
                             text = pair.translated,
                             style = MaterialTheme.typography.headlineMedium,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.align(Alignment.Center)
                         )
 
-                        // Make the play sound icon more visible: larger size and accent color
                         IconButton(
                             onClick = { onSpeak(pair.translated) },
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .size(40.dp)
                         ) {
                             Icon(
                                 Icons.Default.VolumeUp,
                                 contentDescription = "Speak",
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(36.dp)
+                                tint = androidx.compose.ui.graphics.Color.Red,
+                                modifier = Modifier.size(28.dp)
                             )
                         }
                     }

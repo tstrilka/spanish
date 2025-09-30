@@ -53,12 +53,16 @@ fun CatalogScreen(
     var showManageCategoriesDialog by remember { mutableStateOf(false) }
 
     val metadataViewModel: TextPairMetadataViewModel = hiltViewModel()
+    val learningViewModel: LearningViewModel = hiltViewModel()
 
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            catalogViewModel.importCatalogFromCsv(uri, metadataViewModel)
+    val currentCategory by learningViewModel.selectedCategory.collectAsStateWithLifecycle()
+
+    val importLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                catalogViewModel.importCatalogFromCsv(uri, metadataViewModel)
+            }
         }
-    }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -85,7 +89,9 @@ fun CatalogScreen(
             .padding(16.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
             Text(
@@ -124,7 +130,17 @@ fun CatalogScreen(
                 )
             }
             IconButton(
-                onClick = { importLauncher.launch(arrayOf("text/comma-separated-values", "text/csv", "application/csv", "application/vnd.ms-excel", "*/*")) },
+                onClick = {
+                    importLauncher.launch(
+                        arrayOf(
+                            "text/comma-separated-values",
+                            "text/csv",
+                            "application/csv",
+                            "application/vnd.ms-excel",
+                            "*/*"
+                        )
+                    )
+                },
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -135,12 +151,22 @@ fun CatalogScreen(
         }
         SnackbarHost(hostState = snackbarHostState)
 
-        CatalogScreenContent(viewModel = catalogViewModel, metadataViewModel = metadataViewModel)
+        CatalogScreenContent(
+            viewModel = catalogViewModel,
+            metadataViewModel = metadataViewModel,
+            learningViewModel = learningViewModel,
+            currentCategory = currentCategory
+        )
     }
 }
 
 @Composable
-fun CatalogScreenContent(viewModel: CatalogViewModel, metadataViewModel: TextPairMetadataViewModel) {
+fun CatalogScreenContent(
+    viewModel: CatalogViewModel,
+    metadataViewModel: TextPairMetadataViewModel,
+    learningViewModel: LearningViewModel, // <-- Add this
+    currentCategory: String? // <-- Add this
+) {
     val textPairs: List<TextPair> by viewModel.textPairs.collectAsStateWithLifecycle(emptyList())
     val editingItemId: Int? by viewModel.editingItemId.collectAsStateWithLifecycle()
     val searchQuery: String by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -148,11 +174,12 @@ fun CatalogScreenContent(viewModel: CatalogViewModel, metadataViewModel: TextPai
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            viewModel.importCatalogFromCsv(uri, metadataViewModel)
+    val importLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                viewModel.importCatalogFromCsv(uri, metadataViewModel)
+            }
         }
-    }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -235,7 +262,8 @@ fun CatalogScreenContent(viewModel: CatalogViewModel, metadataViewModel: TextPai
                         },
                         onCancel = { viewModel.cancelEditing() },
                         onDelete = { viewModel.deleteTextPair(textPair.id) },
-                        metadataViewModel = metadataViewModel // <-- Pass the viewmodel here!
+                        metadataViewModel = metadataViewModel,
+                        learningViewModel = learningViewModel,
                     )
                 }
             }
