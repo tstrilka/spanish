@@ -12,3 +12,4 @@ on the UP icon and selecting the catalog file
 all releases are downloadable from [releases page](https://github.com/tstrilka/spanish/releases)
 * [initial release v1.0.0](https://github.com/tstrilka/spanish/releases/download/v1.0.0/app-release.apk)
 * [categories management v1.1.0](https://github.com/tstrilka/spanish/releases/download/v1.1.0/app-release.apk)
+* [categories management v1.2.0](https://github.com/tstrilka/spanish/releases/download/v1.2.0/app-release.apk)
