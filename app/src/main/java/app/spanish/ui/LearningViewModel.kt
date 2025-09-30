@@ -15,7 +15,7 @@ import javax.inject.Inject
 @HiltViewModel
 class LearningViewModel @Inject constructor(
     private val learningProgressDao: LearningProgressDao,
-    private val textPairMetadataDao: TextPairMetadataDao  // Add this dependency
+    private val textPairMetadataDao: TextPairMetadataDao
 ) : ViewModel() {
 
     private val _currentPair = MutableStateFlow<TextPair?>(null)
@@ -44,14 +44,81 @@ class LearningViewModel @Inject constructor(
 
     private var lastPairId: Int? = null
 
+    private val _categoryTotalCount = MutableStateFlow(0)
+    val categoryTotalCount: StateFlow<Int> = _categoryTotalCount
+
+    private val _categorySuccessCount = MutableStateFlow(0)
+    val categorySuccessCount: StateFlow<Int> = _categorySuccessCount
+
     init {
         loadCategories()
+
+        // Observe changes in metadata/categories and recompute counts when metadata changes.
+        viewModelScope.launch {
+            textPairMetadataDao.getAllCategories().collect {
+                // Recompute only if a category is selected (keeps zero when "All" selected)
+                val category = _selectedCategory.value
+                if (category != null) {
+                    try {
+                        val allPairs = textPairMetadataDao.getPairsForCategory(category)
+                        _categoryTotalCount.value = allPairs.size
+
+                        val ids = allPairs.map { it.id }
+                        var successCount = 0
+                        for (id in ids) {
+                            val progress = learningProgressDao.getProgress(id)
+                            if ((progress?.successCount ?: 0) > 0) successCount++
+                        }
+                        _categorySuccessCount.value = successCount
+                    } catch (e: Exception) {
+                        app.spanish.util.Logger.e("Failed to update category progress on metadata change", e)
+                        _categoryTotalCount.value = 0
+                        _categorySuccessCount.value = 0
+                    }
+                } else {
+                    _categoryTotalCount.value = 0
+                    _categorySuccessCount.value = 0
+                }
+            }
+        }
+    }
+
+    fun updateCategoryProgress() {
+        viewModelScope.launch {
+            val category = _selectedCategory.value
+            if (category != null) {
+                val allPairs = textPairMetadataDao.getPairsForCategory(category)
+                _categoryTotalCount.value = allPairs.size
+
+                val ids = allPairs.map { it.id }
+                val successCount = ids.count { id ->
+                    val progress = learningProgressDao.getProgress(id)
+                    progress?.successCount ?: 0 > 0
+                }
+                _categorySuccessCount.value = successCount
+            } else {
+                _categoryTotalCount.value = 0
+                _categorySuccessCount.value = 0
+            }
+        }
+    }
+
+    fun resetCategoryProgress() {
+        viewModelScope.launch {
+            val category = _selectedCategory.value
+            if (category != null) {
+                val pairs = textPairMetadataDao.getPairsForCategory(category)
+                for (pair in pairs) {
+                    learningProgressDao.deleteProgress(pair.id)
+                }
+                updateCategoryProgress()
+            }
+        }
     }
 
     private fun loadCategories() {
         viewModelScope.launch {
             try {
-                // Only offer categories that exist in the database
                 textPairMetadataDao.getAllCategories().collect { dbCategories ->
                     val allCategories = dbCategories
                         .map { it.trim() }
@@ -70,6 +137,7 @@ class LearningViewModel @Inject constructor(
     fun setSelectedCategory(category: String?) {
         _selectedCategory.value = category
         loadNextPair()
+        updateCategoryProgress()
     }
 
     fun setLearningMode(mode: LearningMode) {
@@ -90,17 +158,15 @@ class LearningViewModel @Inject constructor(
                 val category = _selectedCategory.value
 
                 if (category != null) {
-                    // Try to get a "fresh" pair first
                     val freshPair = learningProgressDao.getRandomPairForLearningWithCategory(category)
                     if (freshPair != null && freshPair.id != lastPairId) {
                         pair = freshPair
-                      } else {
-                        // Fallback: get any pair from the category, even if recently attempted
+                    } else {
                         val allPairs = textPairMetadataDao.getPairsForCategory(category)
                         val filtered = allPairs.filter { it.id != lastPairId }
                         pair = when {
                             filtered.isNotEmpty() -> filtered.shuffled().first()
-                            allPairs.isNotEmpty() -> allPairs.first() // Only one, allow repeat
+                            allPairs.isNotEmpty() -> allPairs.first()
                             else -> null
                         }
                     }
@@ -168,6 +234,7 @@ class LearningViewModel @Inject constructor(
                         )
                     }
                     learningProgressDao.insertOrUpdate(newProgress)
+                    updateCategoryProgress()
                 } catch (e: Exception) {
                     app.spanish.util.Logger.e("Failed to save learning progress", e)
                 }

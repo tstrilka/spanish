@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.spanish.data.TextPair
+import kotlinx.coroutines.launch
 
 @Composable
 fun CatalogItem(
@@ -50,7 +52,8 @@ fun CatalogItem(
     onCancel: () -> Unit,
     onDelete: () -> Unit,
     metadataViewModel: TextPairMetadataViewModel? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    learningViewModel: LearningViewModel? = null,
 ) {
     var editedOriginal by remember(textPair.original) { mutableStateOf(textPair.original) }
     var editedTranslated by remember(textPair.translated) { mutableStateOf(textPair.translated) }
@@ -61,6 +64,8 @@ fun CatalogItem(
         ?.getCategoriesForTextPair(textPair.id)
         ?.collectAsStateWithLifecycle(emptyList())
         ?.value ?: emptyList()
+
+    val coroutineScope = rememberCoroutineScope()
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -271,10 +276,17 @@ fun CatalogItem(
                     viewModel = metadataViewModel,
                     onDismiss = {
                         showCategoryDialog = false
-                        metadataViewModel.saveMetadata(editedTextPair.id)
-                        categoryVersion++
+                        coroutineScope.launch {
+                            metadataViewModel.saveMetadata(editedTextPair.id)
+                            categoryVersion++
+                            learningViewModel?.updateCategoryProgress()
+                        }
                     },
-                    showButtons = false
+                    showButtons = false,
+                    onCategoriesChanged = suspend {
+                        learningViewModel?.updateCategoryProgress()
+                        Unit
+                    }
                 )
             }
         }

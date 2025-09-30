@@ -48,7 +48,8 @@ fun TextPairEditMetadata(
     textPairId: Int, // This is the id of the text pair
     viewModel: TextPairMetadataViewModel,
     onDismiss: () -> Unit,
-    showButtons: Boolean = true
+    showButtons: Boolean = true,
+    onCategoriesChanged: (suspend () -> Unit)? = null
 ) {
     var newCategory by remember { mutableStateOf("") }
     val selectedCategories by viewModel.selectedCategories.collectAsStateWithLifecycle()
@@ -58,9 +59,9 @@ fun TextPairEditMetadata(
         viewModel.loadCategoriesForTextPair(textPairId)
     }
 
-    // Save categories immediately when changed
     LaunchedEffect(selectedCategories) {
         viewModel.saveMetadata(textPairId)
+        onCategoriesChanged?.let { it() }
     }
 
     Column(
@@ -210,6 +211,5 @@ fun TextPairEditMetadata(
                 }
             }
         }
-        // If showButtons is false, do not show Save/Cancel
     }
 }

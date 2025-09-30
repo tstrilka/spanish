@@ -56,7 +56,9 @@ interface LearningProgressDao {
     """)
     fun getMostDifficultPairs(limit: Int): Flow<List<TextPair>>
 
-    // Add this function to resolve getPairById
     @Query("SELECT * FROM text_pairs WHERE id = :id LIMIT 1")
     suspend fun getPairById(id: Int): TextPair?
+
+    @Query("DELETE FROM learning_progress WHERE textPairId = :textPairId")
+    suspend fun deleteProgress(textPairId: Int)
 }
